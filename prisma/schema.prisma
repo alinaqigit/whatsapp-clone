@@ -1,0 +1,59 @@
+generator client {
+  provider = "prisma-client"
+  output   = "../generated/prisma"
+  moduleFormat = "cjs"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id        String   @id @default(cuid())
+  email     String   @unique
+
+  name      String?
+  password  String
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  messages Message[] 
+
+  ownedConversations Conversation[]
+
+  conversations Conversation[] @relation("UserConversations")
+
+  @@map("users")
+}
+
+model Message {
+  id             String      @id @default(cuid())
+  senderId       String
+  conversationId String
+  content        String
+  createdAt      DateTime    @default(now())
+
+  sender         User        @relation(fields: [senderId], references: [id])
+  conversation   Conversation @relation(fields: [conversationId], references: [id])
+
+  @@index([senderId])
+  @@index([conversationId])
+
+  @@map("messages")
+}
+
+model Conversation {
+  id             String     @id @default(cuid())
+  name           String
+  participants   User[]     @relation("UserConversations")
+  lastMessageAt  DateTime?
+
+  ownerId        String
+  owner          User       @relation(fields: [ownerId], references: [id])
+
+  messages       Message[]
+
+  @@map("conversations")
+}
