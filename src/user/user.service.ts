@@ -39,6 +39,6 @@ export class UserService {
   }
   
   async updateProfile(userId: string, dto: Partial<SignupDto>): Promise<User> {
-    return {} as User; // Implementation pending
+    return await this.repo.updateUser(userId, dto);
   }
 }
