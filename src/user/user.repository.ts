@@ -54,8 +54,11 @@ export class UserRepository {
           ...dto,
         },
       });
+
+      console.log({ dto, user });
+
       return user;
-    } catch(error) {
+    } catch (error) {
       try {
         mapPrismaError(error);
       } catch (error) {

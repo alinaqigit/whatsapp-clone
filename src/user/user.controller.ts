@@ -1,4 +1,12 @@
-import { ClassSerializerInterceptor, Controller, Get, Patch, UseGuards, UseInterceptors } from '@nestjs/common';
+import {
+  Body,
+  ClassSerializerInterceptor,
+  Controller,
+  Get,
+  Patch,
+  UseGuards,
+  UseInterceptors,
+} from '@nestjs/common';
 import { UserEntity } from 'src/common/entities';
 import { JwtGuard } from 'src/common/guards';
 import type { User } from 'generated/prisma/client';
@@ -10,7 +18,7 @@ import { UserService } from './user.service';
 @UseGuards(JwtGuard)
 @Controller('user')
 export class UserController {
-  constructor( private readonly userService: UserService ) { }
+  constructor(private readonly userService: UserService) {}
 
   @Get('profile')
   getProfile(@GetUser() user: User): UserEntity {
@@ -18,7 +26,12 @@ export class UserController {
   }
 
   @Patch('profile')
-  updateProfile(@GetUser('id') userId: string, dto: UserUpdateDto): Promise<User> {
-    return this.userService.updateProfile(userId, dto );
+  async updateProfile(
+    @GetUser('id') userId: string,
+    @Body() dto: UserUpdateDto,
+  ): Promise<UserEntity> {
+    const user = await this.userService.updateProfile(userId, dto);
+
+    return new UserEntity(user);
   }
 }
