@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { User } from 'generated/prisma/client';
-import { SignupDto } from 'src/common/dto';
+import { SignupDto, UserUpdateDto } from 'src/common/dto';
 import { mapPrismaError, mapUserError } from 'src/common/mapper';
 import { PrismaService } from 'src/prisma/prisma.service';
 
@@ -36,6 +36,26 @@ export class UserRepository {
     try {
       return await this.prisma.user.create({ data: dto });
     } catch (error) {
+      try {
+        mapPrismaError(error);
+      } catch (error) {
+        mapUserError(error);
+      }
+    }
+  }
+
+  async updateUser(userId: string, dto: UserUpdateDto): Promise<User> {
+    try {
+      const user = await this.prisma.user.update({
+        where: {
+          id: userId,
+        },
+        data: {
+          ...dto,
+        },
+      });
+      return user;
+    } catch(error) {
       try {
         mapPrismaError(error);
       } catch (error) {
