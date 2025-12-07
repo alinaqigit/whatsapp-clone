@@ -1,6 +1,9 @@
 import { Injectable } from '@nestjs/common';
 import { Conversation } from 'generated/prisma/client';
-import { AddUserToConversationDTO, CreateConversationDto } from 'src/common/dto';
+import {
+  AddUserToConversationDTO,
+  CreateConversationDto,
+} from 'src/common/dto';
 import { mapPrismaError } from 'src/common/mapper';
 import { mapConversationError } from 'src/common/mapper/conversatoin.mapper';
 import { PrismaService } from 'src/prisma/prisma.service';
@@ -56,22 +59,56 @@ export class ConversationRepository {
     conversationId: string,
   ): Promise<string | null> {
     // 1. Retrive Conversation through prisma
-    const conversation = await this.getOneConversationThroughPrisma(conversationId);
+    const conversation =
+      await this.getOneConversationThroughPrisma(conversationId);
 
-    if(!conversation) return null;
+    if (!conversation) return null;
 
     return conversation.id;
   }
 
-  public async addMembers(members: AddUserToConversationDTO['members']) {
-
+  public async addMembers(
+    conId: string,
+    members: AddUserToConversationDTO['members'],
+  ): Promise<void> {
+    try {
+      return await this.addMembersThroughPrisma(conId, members);
+    } catch (error) {
+      mapConversationError(error);
+    }
   }
 
   // Utility methods
 
-  private async addMembersThroughPrisma() {}
+  private async addMembersThroughPrisma(
+    conId: string,
+    members: AddUserToConversationDTO['members'],
+  ): Promise<void> {
+    let array_of_members_Object: Array<{ email: string }> = [];
 
-  private async getOneConversationThroughPrisma(conversationId: string): Promise<Conversation | null> {
+    members.map((member) => {
+      array_of_members_Object.push({ email: member });
+    });
+
+    try {
+      this.prisma.conversation.update({
+        where: {
+          id: conId,
+        },
+        data: {
+          participants: {
+            connect: array_of_members_Object,
+          },
+        },
+      });
+    } catch (error) {
+      mapPrismaError(error);
+    }
+  }
+
+  private async getOneConversationThroughPrisma(
+    conversationId: string,
+  ): Promise<Conversation | null> {
     return this.prisma.conversation.findUnique({
       where: {
         id: conversationId,

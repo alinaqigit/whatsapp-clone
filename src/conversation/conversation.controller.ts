@@ -45,6 +45,7 @@ export class ConversationController {
     return this.conversation.createConversation(userId, dto);
   }
 
+  @HttpCode(HttpStatus.NO_CONTENT)
   @Patch(':id/add-member')
   async addMembers(
     @Param('id') conversationId: string,

@@ -44,7 +44,7 @@ export class ConversationsService {
   async addMembers(
     conversation_Id_to_be_checked: string,
     dto: AddUserToConversationDTO,
-  ) {
+  ): Promise<void> {
     // 1. First check if this Conversation exists or not
 
     const conId = await this.repo.checkConversation(
@@ -71,6 +71,6 @@ export class ConversationsService {
 
     // 3. Finally add members to the conversation
 
-    this.repo
+    return await this.repo.addMembers(conId, dto.members);
   }
 }
