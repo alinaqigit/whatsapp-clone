@@ -2,9 +2,10 @@ import { Module } from '@nestjs/common';
 import { AuthModule } from './auth/auth.module';
 import { PrismaModule } from './prisma/prisma.module';
 import { UserModule } from './user/user.module';
-import { UserExceptionFilter } from './user.filter';
+import { UserExceptionFilter } from './exception-filters/user.filter';
 import { ChatModule } from './chat/chat.module';
 import { ConversationsModule } from './conversation/conversation.module';
+import { ConversationExceptionFilter } from './exception-filters';
 
 @Module({
   imports: [
@@ -19,6 +20,6 @@ import { ConversationsModule } from './conversation/conversation.module';
     ChatModule,
     ConversationsModule,
   ],
-  providers: [UserExceptionFilter],
+  providers: [UserExceptionFilter, ConversationExceptionFilter],
 })
 export class AppModule {}
