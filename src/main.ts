@@ -1,17 +1,18 @@
 import { NestFactory } from '@nestjs/core';
 import { AppModule } from './app.module';
 import { ValidationPipe } from '@nestjs/common';
-import { UserExceptionFilter } from './user.filter';
+import {
+  UserExceptionFilter,
+  ConversationExceptionFilter,
+} from './exception-filters/';
 
 async function bootstrap() {
-  const app = await NestFactory.create(AppModule, 
-    
-  );
+  const app = await NestFactory.create(AppModule);
 
   //Cors Policy
 
   app.enableCors({
-    origin: '*',  // Allow all origins
+    origin: '*', // Allow all origins
   });
 
   // Use Logger
@@ -19,13 +20,18 @@ async function bootstrap() {
 
   // Enable Validation Globally
 
-  app.useGlobalPipes( new ValidationPipe({
-    whitelist: true,
-  }) );
+  app.useGlobalPipes(
+    new ValidationPipe({
+      whitelist: true,
+    }),
+  );
 
   //Enable filters globally
 
-  app.useGlobalFilters(new UserExceptionFilter());
+  app.useGlobalFilters(
+    new UserExceptionFilter(),
+    new ConversationExceptionFilter(),
+  );
 
   // Finally start the server
 

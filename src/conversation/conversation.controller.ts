@@ -4,6 +4,7 @@ import {
   Get,
   HttpCode,
   HttpStatus,
+  Param,
   Patch,
   Post,
   UseGuards,
@@ -12,21 +13,24 @@ import { ConversationsService } from './conversation.service';
 import { Conversation } from 'generated/prisma/browser';
 import { JwtGuard } from 'src/common/guards';
 import { GetUser } from 'src/common/decorators';
-import { CreateConversationDto } from 'src/common/dto';
+import {
+  AddUserToConversationDTO,
+  CreateConversationDto,
+} from 'src/common/dto';
 
 @UseGuards(JwtGuard)
 @Controller('conversation')
 export class ConversationController {
-  constructor(private conversationService: ConversationsService) {}
+  constructor(private conversation: ConversationsService) {}
 
   @HttpCode(HttpStatus.OK)
   @Get()
   async getConversationsForAUser(
-    @GetUser('id') userId: string
+    @GetUser('id') userId: string,
   ): Promise<Conversation[]> {
     // Fetch conversations for a specific user
     const conversations =
-      await this.conversationService.getConversationsForAUser(userId);
+      await this.conversation.getConversationsForAUser(userId);
 
     return conversations;
   }
@@ -38,11 +42,14 @@ export class ConversationController {
     @Body() dto: CreateConversationDto,
   ): Promise<Conversation> {
     // Logic to create a new conversation
-    return this.conversationService.createConversation(userId, dto);
+    return this.conversation.createConversation(userId, dto);
   }
 
-  @Patch(':id/add-user')
-  async updateConversation(): Promise<void> {
-    // Logic to update an existing conversation
+  @Patch(':id/add-member')
+  async addMembers(
+    @Param('id') conversationId: string,
+    @Body() dto: AddUserToConversationDTO,
+  ): Promise<void> {
+    this.conversation.addMembers(conversationId, dto);
   }
 }

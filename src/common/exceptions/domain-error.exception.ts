@@ -12,6 +12,7 @@ export class DomainError extends Error {
       | HttpStatus.INTERNAL_SERVER_ERROR
       | HttpStatus.UNAUTHORIZED
       | HttpStatus.FORBIDDEN,
+    public context?: string,
     public details?: any,
   ) {
     super(message);

@@ -1,6 +1,12 @@
 import { InternalServerErrorException } from '@nestjs/common';
 import { Prisma } from 'generated/prisma/client';
-import { CustomValidationError, InvalidQueryException, PrismaConflictException, UnknownError } from 'src/common/exceptions';
+import {
+  CustomValidationError,
+  DependantRecoredDoesNotExist,
+  InvalidQueryException,
+  PrismaConflictException,
+  UnknownError,
+} from 'src/common/exceptions';
 
 /**
  * Map a Prisma error to an appropriate NestJS HttpException and throw it.
@@ -14,7 +20,7 @@ import { CustomValidationError, InvalidQueryException, PrismaConflictException, 
  *
  * This function always throws an HttpException.
  */
-export function mapPrismaError(error: any): never {
+export function mapPrismaError(error: any, context?: string): never {
   // Type guard helpers
   const isKnownRequestError = (
     err: unknown,
@@ -43,22 +49,22 @@ export function mapPrismaError(error: any): never {
   ): err is Prisma.PrismaClientInitializationError =>
     err instanceof Prisma.PrismaClientInitializationError;
 
-    /**
-     * Extract the target field(s) from the error metadata and normalize to a string.
-     *
-     * Prisma's error metadata shape can vary across versions:
-     * - meta.target: string | string[] (modern Prisma; often an array for compound keys)
-     * - meta.field_name: string (older Prisma versions)
-     * - meta may be null/undefined or contain other properties (cause, details, etc.)
-     *
-     * This helper returns a comma-separated list when multiple fields are present,
-     * or an empty string when no target information is available.
-     *
-     * Examples:
-     *   { target: ['email'] }            -> "email"
-     *   { target: ['first','last'] }     -> "first, last"
-     *   { field_name: 'id' }             -> "id"
-     */
+  /**
+   * Extract the target field(s) from the error metadata and normalize to a string.
+   *
+   * Prisma's error metadata shape can vary across versions:
+   * - meta.target: string | string[] (modern Prisma; often an array for compound keys)
+   * - meta.field_name: string (older Prisma versions)
+   * - meta may be null/undefined or contain other properties (cause, details, etc.)
+   *
+   * This helper returns a comma-separated list when multiple fields are present,
+   * or an empty string when no target information is available.
+   *
+   * Examples:
+   *   { target: ['email'] }            -> "email"
+   *   { target: ['first','last'] }     -> "first, last"
+   *   { field_name: 'id' }             -> "id"
+   */
   const formatTarget = (meta: any): string => {
     if (!meta) return '';
     const target = meta.target ?? meta.field_name;
@@ -73,22 +79,25 @@ export function mapPrismaError(error: any): never {
       // Unique constraint failed
       case 'P2002': {
         const meta = (error as any).meta ?? {};
-        const moduleName = meta.module ?? meta.model ?? meta.resource ?? meta.table ?? '';
+        const moduleName =
+          meta.module ?? meta.model ?? meta.resource ?? meta.table ?? '';
         const target = formatTarget(meta);
         const baseMessage = target
           ? `Unique constraint failed on the field(s): ${target}`
           : 'Unique constraint failed';
-        const message = moduleName ? `${baseMessage} (module: ${moduleName})` : baseMessage;
+        const message = moduleName
+          ? `${baseMessage} (module: ${moduleName})`
+          : baseMessage;
         throw new PrismaConflictException(message);
       }
 
-      // Record to delete does not exist.
-      // case 'P2025': {
-      //   // error.meta may include cause or details
-      //   const meta = (error as any).meta ?? {};
-      //   const cause = meta.cause ?? error.message;
-      //   throw new NotFoundException(cause ?? 'Record not found');
-      // }
+      // Dependence on another record but it does not exist.
+      case 'P2025': {
+        // error.meta may include cause or details
+        const meta = (error as any).meta ?? {};
+        const cause = meta.cause ?? error.message;
+        throw new DependantRecoredDoesNotExist('Dependant entity not found', context);
+      }
 
       // Foreign key constraint failed on the field
       // case 'P2003':
