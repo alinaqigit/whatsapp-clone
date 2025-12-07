@@ -1,6 +1,13 @@
-import { ArgumentsHost, Catch, ConflictException, ExceptionFilter, NotFoundException } from '@nestjs/common';
+import {
+  ArgumentsHost,
+  Catch,
+  ConflictException,
+  ExceptionFilter,
+  NotFoundException,
+} from '@nestjs/common';
 import {
   ConversationError,
+  ConversationNotFound,
   ConversationToBeDeletedNotFound,
   MemberForConverstionNotFound,
 } from 'src/common/exceptions';
@@ -10,11 +17,13 @@ export class ConversationExceptionFilter implements ExceptionFilter {
   catch(exception: unknown, host: ArgumentsHost) {
     const ctx = host.switchToHttp();
     const request = ctx.getRequest<Request>();
-    
-    if (exception instanceof MemberForConverstionNotFound) {
+
+    if (
+      exception instanceof MemberForConverstionNotFound ||
+      exception instanceof ConversationToBeDeletedNotFound || 
+      exception instanceof ConversationNotFound
+    ) {
       throw new NotFoundException(exception.message);
-    } else if (exception instanceof ConversationToBeDeletedNotFound) {
-      throw new NotFoundException(exception.message)
     }
   }
 }

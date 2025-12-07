@@ -5,7 +5,10 @@ import {
   AddUserToConversationDTO,
   CreateConversationDto,
 } from 'src/common/dto';
-import { MemberForConverstionNotFound } from 'src/common/exceptions';
+import {
+  ConversationNotFound,
+  MemberForConverstionNotFound,
+} from 'src/common/exceptions';
 
 @Injectable()
 export class ConversationsService {
@@ -38,8 +41,36 @@ export class ConversationsService {
     return conversation;
   }
 
-  async addMembers(conversationId: string, dto: AddUserToConversationDTO) {
+  async addMembers(
+    conversation_Id_to_be_checked: string,
+    dto: AddUserToConversationDTO,
+  ) {
     // 1. First check if this Conversation exists or not
-    
+
+    const conId = await this.repo.checkConversation(
+      conversation_Id_to_be_checked,
+    );
+
+    if (!conId)
+      throw new ConversationNotFound(
+        'W001',
+        HttpStatus.NOT_FOUND,
+        'Members cannot be added to conversation because conversation does not exists',
+      );
+
+    // 2. Check if members to be added exist or not
+
+    const result = await this.repo.checkMembers(dto.members);
+
+    if (!result)
+      throw new MemberForConverstionNotFound(
+        'P2025',
+        HttpStatus.NOT_FOUND,
+        'Specified member(s) for this conversation not found',
+      );
+
+    // 3. Finally add members to the conversation
+
+    this.repo
   }
 }

@@ -21,6 +21,9 @@ export class ConversationToBeDeletedNotFound extends ConversationError {
   }
 }
 
-export class ConversatoinNotFound extends ConversationError {
-  
+export class ConversationNotFound extends ConversationError {
+  constructor(code: string, status: number, message?: string, details?: any) {
+    super(message ?? 'Conversation Not Found', code, status, details);
+    this.name = 'ConversationNotFoundException';
+  }
 }

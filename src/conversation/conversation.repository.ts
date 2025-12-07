@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { Conversation } from 'generated/prisma/client';
-import { CreateConversationDto } from 'src/common/dto';
+import { AddUserToConversationDTO, CreateConversationDto } from 'src/common/dto';
 import { mapPrismaError } from 'src/common/mapper';
 import { mapConversationError } from 'src/common/mapper/conversatoin.mapper';
 import { PrismaService } from 'src/prisma/prisma.service';
@@ -13,9 +13,11 @@ export class ConversationRepository {
     private user: UserService,
   ) {}
 
+  // public methods
+
   public async getConversations(userId: string): Promise<Conversation[]> {
     try {
-      return this.getConversationThroughPrisma(userId);
+      return this.getManyConversationThroughPrisma(userId);
     } catch (error) {
       mapConversationError(error);
     }
@@ -32,7 +34,52 @@ export class ConversationRepository {
     }
   }
 
-  private async getConversationThroughPrisma(
+  public async checkMembers(members: Array<string>): Promise<boolean> {
+    try {
+      console.log('Searching for members');
+
+      for (let member of members) {
+        await this.user.findByEmail(member);
+      }
+
+      console.log('Members found');
+
+      return true;
+    } catch (error) {
+      console.log('Members not found');
+
+      return false;
+    }
+  }
+
+  public async checkConversation(
+    conversationId: string,
+  ): Promise<string | null> {
+    // 1. Retrive Conversation through prisma
+    const conversation = await this.getOneConversationThroughPrisma(conversationId);
+
+    if(!conversation) return null;
+
+    return conversation.id;
+  }
+
+  public async addMembers(members: AddUserToConversationDTO['members']) {
+
+  }
+
+  // Utility methods
+
+  private async addMembersThroughPrisma() {}
+
+  private async getOneConversationThroughPrisma(conversationId: string): Promise<Conversation | null> {
+    return this.prisma.conversation.findUnique({
+      where: {
+        id: conversationId,
+      },
+    });
+  }
+
+  private async getManyConversationThroughPrisma(
     userId: string,
   ): Promise<Conversation[]> {
     try {
@@ -71,24 +118,6 @@ export class ConversationRepository {
       });
     } catch (error) {
       mapPrismaError(error, 'creating-conversation');
-    }
-  }
-
-  async checkMembers(members: Array<string>): Promise<boolean> {
-    try {
-      console.log("Searching for members")
-      
-      for (let member of members) {
-        await this.user.findByEmail(member);
-      }
-
-      console.log("Members found")
-
-      return true
-    } catch (error) {
-      console.log('Members not found');
-
-      return false
     }
   }
 }

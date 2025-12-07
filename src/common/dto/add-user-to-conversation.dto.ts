@@ -5,5 +5,5 @@ export class AddUserToConversationDTO {
   @IsString({ each: true })
   @IsNotEmpty({ each: true })
   @IsEmail({}, { each: true })
-  members: String[];
+  members: string[];
 }
