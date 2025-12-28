@@ -55,8 +55,6 @@ export class UserRepository {
         },
       });
 
-      console.log({ dto, user });
-
       return user;
     } catch (error) {
       try {

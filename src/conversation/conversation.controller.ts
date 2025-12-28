@@ -1,5 +1,6 @@
 import {
   Body,
+  ClassSerializerInterceptor,
   Controller,
   Get,
   HttpCode,
@@ -8,6 +9,7 @@ import {
   Patch,
   Post,
   UseGuards,
+  UseInterceptors,
 } from '@nestjs/common';
 import { ConversationsService } from './conversation.service';
 import { Conversation } from 'generated/prisma/browser';
@@ -17,7 +19,9 @@ import {
   AddUserToConversationDTO,
   CreateConversationDto,
 } from 'src/common/dto';
+import { ConversationEntity } from 'src/common/entities';
 
+@UseInterceptors(ClassSerializerInterceptor)
 @UseGuards(JwtGuard)
 @Controller('conversation')
 export class ConversationController {
@@ -27,12 +31,18 @@ export class ConversationController {
   @Get()
   async getConversationsForAUser(
     @GetUser('id') userId: string,
-  ): Promise<Conversation[]> {
+  ): Promise<ConversationEntity[]> {
     // Fetch conversations for a specific user
-    const conversations =
-      await this.conversation.getConversationsForAUser(userId);
+    const conversations = await this.conversation.getConversationsForAUser(
+      userId,
+      true,
+    );
+    const safe_to_send_conversations: ConversationEntity[] = [];
+    conversations.forEach((conversation) => {
+      safe_to_send_conversations.push(new ConversationEntity(conversation));
+    });
 
-    return conversations;
+    return safe_to_send_conversations;
   }
 
   @HttpCode(HttpStatus.CREATED)
@@ -48,9 +58,10 @@ export class ConversationController {
   @HttpCode(HttpStatus.NO_CONTENT)
   @Patch(':id/add-member')
   async addMembers(
+    @GetUser('id') userId: string,
     @Param('id') conversationId: string,
     @Body() dto: AddUserToConversationDTO,
   ): Promise<void> {
-    this.conversation.addMembers(conversationId, dto);
+    return await this.conversation.addMembers(userId, conversationId, dto);
   }
 }

@@ -7,6 +7,7 @@ import {
 } from 'src/common/dto';
 import {
   ConversationNotFound,
+  ConversationUnauthorizedAccess,
   MemberForConverstionNotFound,
 } from 'src/common/exceptions';
 
@@ -14,9 +15,12 @@ import {
 export class ConversationsService {
   constructor(private repo: ConversationRepository) {}
 
-  async getConversationsForAUser(userId: string): Promise<Conversation[]> {
+  async getConversationsForAUser(
+    userId: string,
+    Include?: boolean,
+  ): Promise<Conversation[]> {
     // Fetch conversations for a specific user
-    const conversations = await this.repo.getConversations(userId);
+    const conversations = await this.repo.getConversations(userId, Include);
 
     return conversations;
   }
@@ -42,23 +46,34 @@ export class ConversationsService {
   }
 
   async addMembers(
+    userId: string,
     conversation_Id_to_be_checked: string,
     dto: AddUserToConversationDTO,
   ): Promise<void> {
     // 1. First check if this Conversation exists or not
 
-    const conId = await this.repo.checkConversation(
+    const conversation = await this.repo.checkConversation(
       conversation_Id_to_be_checked,
     );
 
-    if (!conId)
+    if (!conversation)
       throw new ConversationNotFound(
         'W001',
         HttpStatus.NOT_FOUND,
         'Members cannot be added to conversation because conversation does not exists',
       );
 
-    // 2. Check if members to be added exist or not
+    // 2. Check if the user is the owner of the conversation
+
+    if (conversation.ownerId !== userId)
+      throw new ConversationUnauthorizedAccess(
+        "Unauthorized Access",
+        HttpStatus.FORBIDDEN,
+        'Only the owner can add members to this conversation',
+        'User trying to add members is not the owner of the conversation',
+      );
+
+    // 3. Check if members to be added exist or not
 
     const result = await this.repo.checkMembers(dto.members);
 
@@ -69,8 +84,8 @@ export class ConversationsService {
         'Specified member(s) for this conversation not found',
       );
 
-    // 3. Finally add members to the conversation
+    // 4. Finally add members to the conversation
 
-    return await this.repo.addMembers(conId, dto.members);
+    return await this.repo.addMembers(conversation.id, dto.members);
   }
 }

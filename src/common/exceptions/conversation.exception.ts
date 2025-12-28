@@ -27,3 +27,15 @@ export class ConversationNotFound extends ConversationError {
     this.name = 'ConversationNotFoundException';
   }
 }
+
+export class ConversationUnauthorizedAccess extends ConversationError {
+  constructor(code: string, status: number, message?: string, details?: any) {
+    super(
+      message ?? 'This operation is only allowed for the conversation owner',
+      code,
+      status,
+      details,
+    );
+    this.name = 'ConversationUnauthorizedAccess';
+  }
+}

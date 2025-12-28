@@ -21,10 +21,7 @@ export class UserService {
   }
 
   async findByEmail(email: string): Promise<User> {
-    console.log("starting to fetch email", email)
     const user = await this.repo.findByEmail(email);
-    console.log("membere found")
-    console.log({user})
 
     if (!user)
       throw new UserNotFoundException(

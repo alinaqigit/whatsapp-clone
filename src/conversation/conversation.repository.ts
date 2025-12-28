@@ -18,9 +18,12 @@ export class ConversationRepository {
 
   // public methods
 
-  public async getConversations(userId: string): Promise<Conversation[]> {
+  public async getConversations(
+    userId: string,
+    Include?: boolean,
+  ): Promise<Conversation[]> {
     try {
-      return this.getManyConversationThroughPrisma(userId);
+      return this.getManyConversationThroughPrisma(userId, Include);
     } catch (error) {
       mapConversationError(error);
     }
@@ -39,32 +42,26 @@ export class ConversationRepository {
 
   public async checkMembers(members: Array<string>): Promise<boolean> {
     try {
-      console.log('Searching for members');
-
       for (let member of members) {
         await this.user.findByEmail(member);
       }
 
-      console.log('Members found');
-
       return true;
     } catch (error) {
-      console.log('Members not found');
-
       return false;
     }
   }
 
   public async checkConversation(
     conversationId: string,
-  ): Promise<string | null> {
+  ): Promise<Conversation | null> {
     // 1. Retrive Conversation through prisma
     const conversation =
       await this.getOneConversationThroughPrisma(conversationId);
 
     if (!conversation) return null;
 
-    return conversation.id;
+    return conversation;
   }
 
   public async addMembers(
@@ -91,7 +88,7 @@ export class ConversationRepository {
     });
 
     try {
-      this.prisma.conversation.update({
+      await this.prisma.conversation.update({
         where: {
           id: conId,
         },
@@ -118,6 +115,7 @@ export class ConversationRepository {
 
   private async getManyConversationThroughPrisma(
     userId: string,
+    Include?: boolean,
   ): Promise<Conversation[]> {
     try {
       return this.prisma.conversation.findMany({
@@ -128,6 +126,7 @@ export class ConversationRepository {
             },
           },
         },
+        include: Include ? { participants: true } : null,
       });
     } catch (error) {
       mapPrismaError(error);
